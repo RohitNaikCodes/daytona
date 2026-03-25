@@ -1,0 +1,15 @@
+version: v2
+modules:
+  - path: proto
+name: buf.build/daytonaio/runner-contracts
+lint:
+  use:
+    - STANDARD
+  except:
+    # Enum values intentionally omit the enum-name prefix so that proto3 JSON
+    # encoding matches the Daytona API's existing string values exactly
+    # (e.g. "CREATE_SANDBOX" not "JOB_TYPE_CREATE_SANDBOX").
+    - ENUM_VALUE_PREFIX
+breaking:
+  use:
+    - FILE

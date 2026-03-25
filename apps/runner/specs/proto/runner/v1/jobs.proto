@@ -1,0 +1,287 @@
+syntax = "proto3";
+
+package runner.v1;
+
+option go_package = "github.com/daytonaio/runner/specs/gen/runner/v1;runnerv1";
+
+import "google/protobuf/timestamp.proto";
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+//
+// Enum value names intentionally omit the enum-name prefix so that proto3's
+// JSON encoding produces the exact string values the Daytona API sends
+// (e.g. "CREATE_SANDBOX", "PENDING", "SANDBOX").  The ENUM_VALUE_PREFIX lint
+// rule is suppressed in this module's buf.yaml for this reason.
+// Zero-value sentinels carry a full prefix to avoid package-level name
+// collisions between enum types.
+
+enum JobType {
+  JOB_TYPE_UNSPECIFIED = 0;
+  CREATE_SANDBOX = 1;
+  START_SANDBOX = 2;
+  STOP_SANDBOX = 3;
+  DESTROY_SANDBOX = 4;
+  RESIZE_SANDBOX = 5;
+  CREATE_BACKUP = 6;
+  BUILD_SNAPSHOT = 7;
+  PULL_SNAPSHOT = 8;
+  RECOVER_SANDBOX = 9;
+  INSPECT_SNAPSHOT_IN_REGISTRY = 10;
+  REMOVE_SNAPSHOT = 11;
+  UPDATE_SANDBOX_NETWORK_SETTINGS = 12;
+}
+
+enum JobStatus {
+  JOB_STATUS_UNSPECIFIED = 0;
+  PENDING = 1;
+  IN_PROGRESS = 2;
+  COMPLETED = 3;
+  FAILED = 4;
+}
+
+enum ResourceType {
+  RESOURCE_TYPE_UNSPECIFIED = 0;
+  SANDBOX = 1;
+  SNAPSHOT = 2;
+  BACKUP = 3;
+}
+
+// ─── Shared types ─────────────────────────────────────────────────────────────
+
+// Registry holds credentials for a container image registry.
+// url has the scheme stripped (e.g. "registry.example.com", not "https://...").
+message Registry {
+  string url = 1;
+  optional string project = 2;
+  optional string username = 3;
+  optional string password = 4;
+}
+
+// Volume describes a persistent volume mount inside the sandbox.
+message Volume {
+  string volume_id = 1;
+  string mount_path = 2;
+  optional string subpath = 3;
+}
+
+// ─── Payload messages ─────────────────────────────────────────────────────────
+//
+// Each message corresponds to one JobType and defines the fields that the
+// Daytona API serialises into the job's `payload` JSON string.
+// Field names use snake_case; proto3's standard JSON mapping renders them as
+// camelCase (e.g. cpu_quota → cpuQuota), matching the existing wire format.
+
+// CreateSandboxPayload is the payload for JOB_TYPE_CREATE_SANDBOX.
+message CreateSandboxPayload {
+  string id = 1;
+  string user_id = 2;
+  string snapshot = 3;
+  string os_user = 4;
+  int64 cpu_quota = 5;
+  int64 gpu_quota = 6;
+  int64 memory_quota = 7;
+  int64 storage_quota = 8;
+  map<string, string> env = 9;
+  optional Registry registry = 10;
+  repeated string entrypoint = 11;
+  repeated Volume volumes = 12;
+  optional bool network_block_all = 13;
+  optional string network_allow_list = 14;
+  map<string, string> metadata = 15;
+  optional string auth_token = 16;
+  optional string otel_endpoint = 17;
+  optional bool skip_start = 18;
+  string organization_id = 19;
+  optional string region_id = 20;
+}
+
+// StartSandboxPayload is the payload for JOB_TYPE_START_SANDBOX.
+message StartSandboxPayload {
+  optional string auth_token = 1;
+  map<string, string> metadata = 2;
+}
+
+// ResizeSandboxPayload is the payload for JOB_TYPE_RESIZE_SANDBOX.
+// gpu is intentionally absent — not sent by the v2 runner adapter.
+message ResizeSandboxPayload {
+  optional int64 cpu = 1;
+  optional int64 memory = 2;
+  optional int64 disk = 3;
+}
+
+// CreateBackupPayload is the payload for JOB_TYPE_CREATE_BACKUP.
+message CreateBackupPayload {
+  string snapshot = 1;
+  optional Registry registry = 2;
+}
+
+// BuildSnapshotPayload is the payload for JOB_TYPE_BUILD_SNAPSHOT.
+message BuildSnapshotPayload {
+  string snapshot = 1;
+  optional string dockerfile = 2;
+  optional string organization_id = 3;
+  repeated string context = 4;
+  optional bool push_to_internal_registry = 5;
+  repeated Registry source_registries = 6;
+  optional Registry registry = 7;
+}
+
+// PullSnapshotPayload is the payload for JOB_TYPE_PULL_SNAPSHOT.
+message PullSnapshotPayload {
+  string snapshot = 1;
+  optional string new_tag = 2;
+  optional Registry registry = 3;
+  optional Registry destination_registry = 4;
+  optional string destination_ref = 5;
+}
+
+// RecoverSandboxPayload is the payload for JOB_TYPE_RECOVER_SANDBOX.
+message RecoverSandboxPayload {
+  string user_id = 1;
+  string snapshot = 2;
+  string os_user = 3;
+  int64 cpu_quota = 4;
+  int64 gpu_quota = 5;
+  int64 memory_quota = 6;
+  int64 storage_quota = 7;
+  map<string, string> env = 8;
+  repeated Volume volumes = 9;
+  optional bool network_block_all = 10;
+  optional string network_allow_list = 11;
+  optional string error_reason = 12;
+  optional string backup_error_reason = 13;
+}
+
+// InspectSnapshotPayload is the payload for JOB_TYPE_INSPECT_SNAPSHOT_IN_REGISTRY.
+message InspectSnapshotPayload {
+  string snapshot = 1;
+  optional Registry registry = 2;
+}
+
+// UpdateNetworkSettingsPayload is the payload for JOB_TYPE_UPDATE_SANDBOX_NETWORK_SETTINGS.
+message UpdateNetworkSettingsPayload {
+  optional bool network_block_all = 1;
+  optional string network_allow_list = 2;
+  optional bool network_limit_egress = 3;
+}
+
+// ─── Job envelope ─────────────────────────────────────────────────────────────
+
+// Job mirrors the JobDto returned by the Daytona API poll endpoint.
+// The `payload` field is a raw JSON string; its schema is determined by `type`.
+// Use the payload messages above to parse it:
+//
+//   switch job.Type {
+//   case runnerv1.JobType_CREATE_SANDBOX:
+//       var p runnerv1.CreateSandboxPayload
+//       protojson.Unmarshal([]byte(job.Payload), &p)
+//   ...
+//   }
+message Job {
+  string id = 1;
+
+  // type identifies the operation. JSON value is the JobType enum name
+  // (e.g. "CREATE_SANDBOX").
+  JobType type = 2;
+
+  // status is the current lifecycle state. JSON value is the JobStatus enum
+  // name (e.g. "PENDING").
+  JobStatus status = 3;
+
+  // resource_type indicates whether the job operates on a sandbox or snapshot.
+  // JSON value is the ResourceType enum name (e.g. "SANDBOX").
+  ResourceType resource_type = 4;
+
+  // resource_id is the sandbox ID or snapshot reference this job operates on.
+  string resource_id = 5;
+
+  // payload is the JSON-encoded operation-specific payload. Parse it using the
+  // typed payload message that corresponds to `type`.
+  // Empty for STOP_SANDBOX, DESTROY_SANDBOX, and REMOVE_SNAPSHOT.
+  optional string payload = 6;
+
+  // trace_context carries the W3C Trace Context headers for distributed
+  // tracing (e.g. {"traceparent": "00-..."}).
+  map<string, string> trace_context = 7;
+
+  // error_message is populated when status is FAILED.
+  optional string error_message = 8;
+
+  google.protobuf.Timestamp created_at = 9;
+  optional google.protobuf.Timestamp updated_at = 10;
+}
+
+// ─── Result metadata messages ─────────────────────────────────────────────────
+//
+// These messages define what the runner encodes as the `resultMetadata` JSON
+// string when calling UpdateJobStatus on completion.
+
+// SandboxResultMetadata is the result for CREATE_SANDBOX and START_SANDBOX.
+message SandboxResultMetadata {
+  string daemon_version = 1;
+}
+
+// SnapshotResultMetadata is the result for BUILD_SNAPSHOT and PULL_SNAPSHOT.
+message SnapshotResultMetadata {
+  double size_gb = 1;
+  repeated string entrypoint = 2;
+  repeated string cmd = 3;
+  string hash = 4;
+}
+
+// InspectSnapshotResultMetadata is the result for INSPECT_SNAPSHOT_IN_REGISTRY.
+message InspectSnapshotResultMetadata {
+  string hash = 1;
+  double size_gb = 2;
+}
+
+// ─── Poll / update messages ───────────────────────────────────────────────────
+
+// PollJobsRequest maps to the query parameters of GET /jobs/poll.
+message PollJobsRequest {
+  // timeout_seconds is the long-poll wait time (default 30, max 60).
+  optional int32 timeout_seconds = 1;
+
+  // limit is the maximum number of jobs to return (default 10, max 100).
+  optional int32 limit = 2;
+}
+
+// PollJobsResponse wraps the list of jobs returned by the poll endpoint.
+message PollJobsResponse {
+  repeated Job jobs = 1;
+}
+
+// UpdateJobStatusRequest maps to the body of POST /jobs/{jobId}/status.
+message UpdateJobStatusRequest {
+  // status must be COMPLETED or FAILED.
+  JobStatus status = 1;
+
+  // error_message is required when status is FAILED.
+  optional string error_message = 2;
+
+  // result_metadata is the JSON-encoded result for completed jobs.
+  // Encode a SandboxResultMetadata, SnapshotResultMetadata, or
+  // InspectSnapshotResultMetadata depending on the job type.
+  // Omit for jobs that produce no result (STOP, DESTROY, RESIZE, etc.).
+  optional string result_metadata = 3;
+}
+
+// UpdateJobStatusResponse mirrors the JobDto returned by the status endpoint.
+message UpdateJobStatusResponse {
+  Job job = 1;
+}
+
+// ─── RunnerJobService ─────────────────────────────────────────────────────────
+
+// RunnerJobService describes the HTTP endpoints the runner calls on the
+// Daytona API. Authentication is via the runner's bearer token.
+service RunnerJobService {
+  // PollJobs long-polls for pending jobs. Returns immediately if work is
+  // available, otherwise blocks until timeout_seconds elapses.
+  // Maps to: GET /jobs/poll
+  rpc PollJobs(PollJobsRequest) returns (PollJobsResponse);
+
+  // UpdateJobStatus reports completion or failure of a claimed job.
+  // Maps to: POST /jobs/{jobId}/status
+  rpc UpdateJobStatus(UpdateJobStatusRequest) returns (UpdateJobStatusResponse);
+}
