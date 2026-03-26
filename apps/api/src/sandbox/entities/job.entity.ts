@@ -47,7 +47,7 @@ export class Job {
 
   @Column({
     type: 'enum',
-    enum: [JobStatus.PENDING, JobStatus.IN_PROGRESS, JobStatus.COMPLETED, JobStatus.FAILED],
+    enum: JobStatus,
     default: JobStatus.PENDING,
   })
   status: JobStatus
@@ -57,7 +57,7 @@ export class Job {
 
   @Column({
     type: 'enum',
-    enum: [ResourceType.SANDBOX, ResourceType.SNAPSHOT, ResourceType.BACKUP],
+    enum: ResourceType,
   })
   resourceType: ResourceType
 
