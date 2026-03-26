@@ -4,264 +4,194 @@
 //   protoc               unknown
 // source: runner.proto
 
-/* eslint-disable */
-
 export enum JobType {
-  JOB_TYPE_UNSPECIFIED = "JOB_TYPE_UNSPECIFIED",
-  CREATE_SANDBOX = "CREATE_SANDBOX",
-  START_SANDBOX = "START_SANDBOX",
-  STOP_SANDBOX = "STOP_SANDBOX",
-  DESTROY_SANDBOX = "DESTROY_SANDBOX",
-  RESIZE_SANDBOX = "RESIZE_SANDBOX",
-  CREATE_BACKUP = "CREATE_BACKUP",
-  BUILD_SNAPSHOT = "BUILD_SNAPSHOT",
-  PULL_SNAPSHOT = "PULL_SNAPSHOT",
-  RECOVER_SANDBOX = "RECOVER_SANDBOX",
-  INSPECT_SNAPSHOT_IN_REGISTRY = "INSPECT_SNAPSHOT_IN_REGISTRY",
-  REMOVE_SNAPSHOT = "REMOVE_SNAPSHOT",
-  UPDATE_SANDBOX_NETWORK_SETTINGS = "UPDATE_SANDBOX_NETWORK_SETTINGS",
-  UNRECOGNIZED = "UNRECOGNIZED",
+  JOB_TYPE_UNSPECIFIED = 'JOB_TYPE_UNSPECIFIED',
+  CREATE_SANDBOX = 'CREATE_SANDBOX',
+  START_SANDBOX = 'START_SANDBOX',
+  STOP_SANDBOX = 'STOP_SANDBOX',
+  DESTROY_SANDBOX = 'DESTROY_SANDBOX',
+  RESIZE_SANDBOX = 'RESIZE_SANDBOX',
+  CREATE_BACKUP = 'CREATE_BACKUP',
+  BUILD_SNAPSHOT = 'BUILD_SNAPSHOT',
+  PULL_SNAPSHOT = 'PULL_SNAPSHOT',
+  RECOVER_SANDBOX = 'RECOVER_SANDBOX',
+  INSPECT_SNAPSHOT_IN_REGISTRY = 'INSPECT_SNAPSHOT_IN_REGISTRY',
+  REMOVE_SNAPSHOT = 'REMOVE_SNAPSHOT',
+  UPDATE_SANDBOX_NETWORK_SETTINGS = 'UPDATE_SANDBOX_NETWORK_SETTINGS',
+  UNRECOGNIZED = 'UNRECOGNIZED',
 }
 
 export enum JobStatus {
-  JOB_STATUS_UNSPECIFIED = "JOB_STATUS_UNSPECIFIED",
-  PENDING = "PENDING",
-  IN_PROGRESS = "IN_PROGRESS",
-  COMPLETED = "COMPLETED",
-  FAILED = "FAILED",
-  UNRECOGNIZED = "UNRECOGNIZED",
+  JOB_STATUS_UNSPECIFIED = 'JOB_STATUS_UNSPECIFIED',
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  UNRECOGNIZED = 'UNRECOGNIZED',
 }
 
 export enum ResourceType {
-  RESOURCE_TYPE_UNSPECIFIED = "RESOURCE_TYPE_UNSPECIFIED",
-  SANDBOX = "SANDBOX",
-  SNAPSHOT = "SNAPSHOT",
-  BACKUP = "BACKUP",
-  UNRECOGNIZED = "UNRECOGNIZED",
+  RESOURCE_TYPE_UNSPECIFIED = 'RESOURCE_TYPE_UNSPECIFIED',
+  SANDBOX = 'SANDBOX',
+  SNAPSHOT = 'SNAPSHOT',
+  BACKUP = 'BACKUP',
+  UNRECOGNIZED = 'UNRECOGNIZED',
 }
 
 /** Job is the v2 runner job record delivered by the job queue. */
 export interface Job {
-  id?: string | undefined;
-  type?: JobType | undefined;
-  status?:
-    | JobStatus
-    | undefined;
+  id?: string | undefined
+  type?: JobType | undefined
+  status?: JobStatus | undefined
   /** json: resourceType */
-  resourceType?:
-    | ResourceType
-    | undefined;
+  resourceType?: ResourceType | undefined
   /** json: resourceId */
-  resourceId?: string | undefined;
-  payload?:
-    | string
-    | undefined;
+  resourceId?: string | undefined
+  payload?: string | undefined
   /** json: traceContext */
-  traceContext?:
-    | { [key: string]: string }
-    | undefined;
+  traceContext?: { [key: string]: string } | undefined
   /** json: errorMessage */
-  errorMessage?:
-    | string
-    | undefined;
+  errorMessage?: string | undefined
   /** json: createdAt */
-  createdAt?:
-    | string
-    | undefined;
+  createdAt?: string | undefined
   /** json: updatedAt */
-  updatedAt?: string | undefined;
+  updatedAt?: string | undefined
 }
 
 export interface Job_TraceContextEntry {
-  key: string;
-  value: string;
+  key: string
+  value: string
 }
 
 /** UpdateJobStatus is sent by the runner to report job completion. */
 export interface UpdateJobStatus {
-  status?:
-    | JobStatus
-    | undefined;
+  status?: JobStatus | undefined
   /** json: errorMessage */
-  errorMessage?:
-    | string
-    | undefined;
+  errorMessage?: string | undefined
   /** json: resultMetadata */
-  resultMetadata?: string | undefined;
+  resultMetadata?: string | undefined
 }
 
 /** RegistryInfo carries OCI registry credentials. */
 export interface RegistryInfo {
   /** Registry URL (without scheme). */
-  url?:
-    | string
-    | undefined;
+  url?: string | undefined
   /** Optional registry project / namespace. */
-  project?: string | undefined;
-  username?: string | undefined;
-  password?: string | undefined;
+  project?: string | undefined
+  username?: string | undefined
+  password?: string | undefined
 }
 
 /** VolumeMount describes a volume attached to a sandbox. */
 export interface VolumeMount {
   /** json: volumeId */
-  volumeId?:
-    | string
-    | undefined;
+  volumeId?: string | undefined
   /** json: mountPath */
-  mountPath?: string | undefined;
-  subpath?: string | undefined;
+  mountPath?: string | undefined
+  subpath?: string | undefined
 }
 
 /** CreateSandboxPayload is the job payload for CREATE_SANDBOX jobs. */
 export interface CreateSandboxPayload {
-  id?:
-    | string
-    | undefined;
+  id?: string | undefined
   /** json: fromVolumeId */
-  fromVolumeId?:
-    | string
-    | undefined;
+  fromVolumeId?: string | undefined
   /** json: userId */
-  userId?: string | undefined;
-  snapshot?:
-    | string
-    | undefined;
+  userId?: string | undefined
+  snapshot?: string | undefined
   /** json: osUser */
-  osUser?:
-    | string
-    | undefined;
+  osUser?: string | undefined
   /** json: cpuQuota */
-  cpuQuota?:
-    | number
-    | undefined;
+  cpuQuota?: number | undefined
   /** json: gpuQuota */
-  gpuQuota?:
-    | number
-    | undefined;
+  gpuQuota?: number | undefined
   /** json: memoryQuota */
-  memoryQuota?:
-    | number
-    | undefined;
+  memoryQuota?: number | undefined
   /** json: storageQuota */
-  storageQuota?: number | undefined;
-  env?: { [key: string]: string } | undefined;
-  registry?: RegistryInfo | undefined;
-  entrypoint?: string[] | undefined;
-  volumes?:
-    | VolumeMount[]
-    | undefined;
+  storageQuota?: number | undefined
+  env?: { [key: string]: string } | undefined
+  registry?: RegistryInfo | undefined
+  entrypoint?: string[] | undefined
+  volumes?: VolumeMount[] | undefined
   /** json: networkBlockAll */
-  networkBlockAll?:
-    | boolean
-    | undefined;
+  networkBlockAll?: boolean | undefined
   /** json: networkAllowList */
-  networkAllowList?: string | undefined;
-  metadata?:
-    | { [key: string]: string }
-    | undefined;
+  networkAllowList?: string | undefined
+  metadata?: { [key: string]: string } | undefined
   /** json: authToken */
-  authToken?:
-    | string
-    | undefined;
+  authToken?: string | undefined
   /** json: otelEndpoint */
-  otelEndpoint?:
-    | string
-    | undefined;
+  otelEndpoint?: string | undefined
   /** json: skipStart */
-  skipStart?:
-    | boolean
-    | undefined;
+  skipStart?: boolean | undefined
   /** json: organizationId */
-  organizationId?:
-    | string
-    | undefined;
+  organizationId?: string | undefined
   /** json: regionId */
-  regionId?: string | undefined;
+  regionId?: string | undefined
 }
 
 export interface CreateSandboxPayload_EnvEntry {
-  key: string;
-  value: string;
+  key: string
+  value: string
 }
 
 export interface CreateSandboxPayload_MetadataEntry {
-  key: string;
-  value: string;
+  key: string
+  value: string
 }
 
 /** StartSandboxPayload is the job payload for START_SANDBOX jobs. */
 export interface StartSandboxPayload {
   /** json: authToken */
-  authToken?: string | undefined;
-  metadata?: { [key: string]: string } | undefined;
+  authToken?: string | undefined
+  metadata?: { [key: string]: string } | undefined
 }
 
 export interface StartSandboxPayload_MetadataEntry {
-  key: string;
-  value: string;
+  key: string
+  value: string
 }
 
 /** ResizeSandboxPayload is the job payload for RESIZE_SANDBOX jobs. */
 export interface ResizeSandboxPayload {
-  cpu?: number | undefined;
-  gpu?: number | undefined;
-  memory?: number | undefined;
-  disk?: number | undefined;
+  cpu?: number | undefined
+  gpu?: number | undefined
+  memory?: number | undefined
+  disk?: number | undefined
 }
 
 /** RecoverSandboxPayload is the job payload for RECOVER_SANDBOX jobs. */
 export interface RecoverSandboxPayload {
   /** json: fromVolumeId */
-  fromVolumeId?:
-    | string
-    | undefined;
+  fromVolumeId?: string | undefined
   /** json: userId */
-  userId?: string | undefined;
-  snapshot?:
-    | string
-    | undefined;
+  userId?: string | undefined
+  snapshot?: string | undefined
   /** json: osUser */
-  osUser?:
-    | string
-    | undefined;
+  osUser?: string | undefined
   /** json: cpuQuota */
-  cpuQuota?:
-    | number
-    | undefined;
+  cpuQuota?: number | undefined
   /** json: gpuQuota */
-  gpuQuota?:
-    | number
-    | undefined;
+  gpuQuota?: number | undefined
   /** json: memoryQuota */
-  memoryQuota?:
-    | number
-    | undefined;
+  memoryQuota?: number | undefined
   /** json: storageQuota */
-  storageQuota?: number | undefined;
-  env?: { [key: string]: string } | undefined;
-  volumes?:
-    | VolumeMount[]
-    | undefined;
+  storageQuota?: number | undefined
+  env?: { [key: string]: string } | undefined
+  volumes?: VolumeMount[] | undefined
   /** json: networkBlockAll */
-  networkBlockAll?:
-    | boolean
-    | undefined;
+  networkBlockAll?: boolean | undefined
   /** json: networkAllowList */
-  networkAllowList?:
-    | string
-    | undefined;
+  networkAllowList?: string | undefined
   /** json: errorReason */
-  errorReason?:
-    | string
-    | undefined;
+  errorReason?: string | undefined
   /** json: backupErrorReason */
-  backupErrorReason?: string | undefined;
+  backupErrorReason?: string | undefined
 }
 
 export interface RecoverSandboxPayload_EnvEntry {
-  key: string;
-  value: string;
+  key: string
+  value: string
 }
 
 /**
@@ -270,59 +200,43 @@ export interface RecoverSandboxPayload_EnvEntry {
  */
 export interface UpdateNetworkSettingsPayload {
   /** json: networkBlockAll */
-  networkBlockAll?:
-    | boolean
-    | undefined;
+  networkBlockAll?: boolean | undefined
   /** json: networkAllowList */
-  networkAllowList?:
-    | string
-    | undefined;
+  networkAllowList?: string | undefined
   /** json: networkLimitEgress */
-  networkLimitEgress?: boolean | undefined;
+  networkLimitEgress?: boolean | undefined
 }
 
 /** CreateBackupPayload is the job payload for CREATE_BACKUP jobs. */
 export interface CreateBackupPayload {
-  snapshot?: string | undefined;
-  registry?: RegistryInfo | undefined;
+  snapshot?: string | undefined
+  registry?: RegistryInfo | undefined
 }
 
 /** BuildSnapshotPayload is the job payload for BUILD_SNAPSHOT jobs. */
 export interface BuildSnapshotPayload {
-  snapshot?:
-    | string
-    | undefined;
+  snapshot?: string | undefined
   /** json: sourceRegistries */
-  sourceRegistries?: RegistryInfo[] | undefined;
-  registry?: RegistryInfo | undefined;
-  dockerfile?:
-    | string
-    | undefined;
+  sourceRegistries?: RegistryInfo[] | undefined
+  registry?: RegistryInfo | undefined
+  dockerfile?: string | undefined
   /** json: organizationId */
-  organizationId?: string | undefined;
-  context?:
-    | string[]
-    | undefined;
+  organizationId?: string | undefined
+  context?: string[] | undefined
   /** json: pushToInternalRegistry */
-  pushToInternalRegistry?: boolean | undefined;
+  pushToInternalRegistry?: boolean | undefined
 }
 
 /** PullSnapshotPayload is the job payload for PULL_SNAPSHOT jobs. */
 export interface PullSnapshotPayload {
-  snapshot?: string | undefined;
-  registry?:
-    | RegistryInfo
-    | undefined;
+  snapshot?: string | undefined
+  registry?: RegistryInfo | undefined
   /** json: destinationRegistry */
-  destinationRegistry?:
-    | RegistryInfo
-    | undefined;
+  destinationRegistry?: RegistryInfo | undefined
   /** json: destinationRef */
-  destinationRef?:
-    | string
-    | undefined;
+  destinationRef?: string | undefined
   /** json: newTag */
-  newTag?: string | undefined;
+  newTag?: string | undefined
 }
 
 /**
@@ -330,6 +244,6 @@ export interface PullSnapshotPayload {
  * INSPECT_SNAPSHOT_IN_REGISTRY jobs.
  */
 export interface InspectSnapshotInRegistryPayload {
-  snapshot?: string | undefined;
-  registry?: RegistryInfo | undefined;
+  snapshot?: string | undefined
+  registry?: RegistryInfo | undefined
 }

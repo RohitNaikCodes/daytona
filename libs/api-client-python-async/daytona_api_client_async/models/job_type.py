@@ -27,6 +27,7 @@ class JobType(str, Enum):
     """
     allowed enum values
     """
+    JOB_TYPE_UNSPECIFIED = 'JOB_TYPE_UNSPECIFIED'
     CREATE_SANDBOX = 'CREATE_SANDBOX'
     START_SANDBOX = 'START_SANDBOX'
     STOP_SANDBOX = 'STOP_SANDBOX'
@@ -39,6 +40,7 @@ class JobType(str, Enum):
     INSPECT_SNAPSHOT_IN_REGISTRY = 'INSPECT_SNAPSHOT_IN_REGISTRY'
     REMOVE_SNAPSHOT = 'REMOVE_SNAPSHOT'
     UPDATE_SANDBOX_NETWORK_SETTINGS = 'UPDATE_SANDBOX_NETWORK_SETTINGS'
+    UNRECOGNIZED = 'UNRECOGNIZED'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

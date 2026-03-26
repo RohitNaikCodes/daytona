@@ -13786,6 +13786,7 @@ components:
     JobType:
       description: The type of the job
       enum:
+      - JOB_TYPE_UNSPECIFIED
       - CREATE_SANDBOX
       - START_SANDBOX
       - STOP_SANDBOX
@@ -13798,6 +13799,7 @@ components:
       - INSPECT_SNAPSHOT_IN_REGISTRY
       - REMOVE_SNAPSHOT
       - UPDATE_SANDBOX_NETWORK_SETTINGS
+      - UNRECOGNIZED
       type: string
     Job:
       example:

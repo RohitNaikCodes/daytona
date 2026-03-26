@@ -6,9 +6,9 @@
 package specs
 
 import (
-	"google.golang.org/protobuf/reflect/protoreflect"
 	apiclient "github.com/daytonaio/daytona/libs/api-client-go"
 	specsgen "github.com/daytonaio/runner/pkg/runner/v2/specs/gen"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // JobTypeFromAPIClient maps an apiclient.JobType string to a specsgen.JobType enum.
