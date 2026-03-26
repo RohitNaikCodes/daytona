@@ -362,7 +362,7 @@ export class JobService {
       return true
     }
 
-    const allowedTransitions: Record<JobStatus, JobStatus[]> = {
+    const allowedTransitions: Partial<Record<JobStatus, JobStatus[]>> = {
       [JobStatus.PENDING]: [JobStatus.IN_PROGRESS, JobStatus.FAILED],
       [JobStatus.IN_PROGRESS]: [JobStatus.COMPLETED, JobStatus.FAILED],
       [JobStatus.COMPLETED]: [],
