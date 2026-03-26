@@ -23,6 +23,8 @@ import (
 	"github.com/daytonaio/runner/internal/metrics"
 	runnerapiclient "github.com/daytonaio/runner/pkg/apiclient"
 	"github.com/daytonaio/runner/pkg/docker"
+	"github.com/daytonaio/runner/pkg/runner/v2/specs"
+	specsgen "github.com/daytonaio/runner/pkg/runner/v2/specs/gen"
 )
 
 type ExecutorConfig struct {
@@ -56,20 +58,23 @@ func NewExecutor(cfg *ExecutorConfig) (*Executor, error) {
 
 // Execute processes a job and updates its status
 func (e *Executor) Execute(ctx context.Context, job *apiclient.Job) {
+	// Convert to proto job type at the executor boundary
+	specJob := specs.JobFromAPIClient(job)
+
 	// Extract trace context from job to continue distributed trace
-	ctx = e.extractTraceContext(ctx, job)
+	ctx = e.extractTraceContext(ctx, specJob)
 
 	// Build log fields
 	jobLog := e.log.With(
-		slog.String("job_id", job.GetId()),
-		slog.String("job_type", string(job.GetType())),
+		slog.String("job_id", specJob.GetId()),
+		slog.String("job_type", specJob.GetType().String()),
 	)
 
 	// Add resource info if present
-	if resourceType := job.GetResourceType(); resourceType != "" {
-		jobLog = jobLog.With(slog.String("resource_type", resourceType))
+	if resourceType := specJob.GetResourceType(); resourceType != specsgen.ResourceType_RESOURCE_TYPE_UNSPECIFIED {
+		jobLog = jobLog.With(slog.String("resource_type", resourceType.String()))
 	}
-	if resourceId := job.GetResourceId(); resourceId != "" {
+	if resourceId := specJob.GetResourceId(); resourceId != "" {
 		jobLog = jobLog.With(slog.String("resource_id", resourceId))
 	}
 
@@ -84,13 +89,13 @@ func (e *Executor) Execute(ctx context.Context, job *apiclient.Job) {
 	jobLog.InfoContext(ctx, "Executing job")
 
 	// Execute the job based on type
-	resultMetadata, err := e.executeJob(ctx, job)
+	resultMetadata, err := e.executeJob(ctx, specJob)
 
 	// Update job status
-	status := apiclient.JOBSTATUS_COMPLETED
+	status := specsgen.JobStatus_COMPLETED
 	var errorMessage *string
 	if err != nil {
-		status = apiclient.JOBSTATUS_FAILED
+		status = specsgen.JobStatus_FAILED
 		errMsg := err.Error()
 		errorMessage = &errMsg
 		jobLog.ErrorContext(ctx, "Job failed", "error", err)
@@ -99,27 +104,27 @@ func (e *Executor) Execute(ctx context.Context, job *apiclient.Job) {
 	}
 
 	// Report status to API
-	if err := e.updateJobStatus(ctx, job.GetId(), status, resultMetadata, errorMessage); err != nil {
+	if err := e.updateJobStatus(ctx, specJob.GetId(), status, resultMetadata, errorMessage); err != nil {
 		jobLog.ErrorContext(ctx, "Failed to update job status", "error", err)
 	}
 }
 
 // executeJob dispatches to the appropriate handler based on job type
-func (e *Executor) executeJob(ctx context.Context, job *apiclient.Job) (any, error) {
+func (e *Executor) executeJob(ctx context.Context, job *specsgen.Job) (any, error) {
 	// Create a span for the job execution
 	tracer := otel.Tracer("runner")
 	ctx, span := tracer.Start(ctx, fmt.Sprintf("execute_%s", job.GetType()),
 		trace.WithAttributes(
 			attribute.String("job.id", job.GetId()),
-			attribute.String("job.type", string(job.GetType())),
-			attribute.String("job.status", string(job.GetStatus())),
+			attribute.String("job.type", job.GetType().String()),
+			attribute.String("job.status", job.GetStatus().String()),
 		),
 	)
 	defer span.End()
 
 	// Add resource attributes if present
-	if resourceType := job.GetResourceType(); resourceType != "" {
-		span.SetAttributes(attribute.String("resource.type", resourceType))
+	if resourceType := job.GetResourceType(); resourceType != specsgen.ResourceType_RESOURCE_TYPE_UNSPECIFIED {
+		span.SetAttributes(attribute.String("resource.type", resourceType.String()))
 	}
 	if resourceId := job.GetResourceId(); resourceId != "" {
 		span.SetAttributes(attribute.String("resource.id", resourceId))
@@ -129,29 +134,29 @@ func (e *Executor) executeJob(ctx context.Context, job *apiclient.Job) (any, err
 	var resultMetadata any
 	var err error
 	switch job.GetType() {
-	case apiclient.JOBTYPE_CREATE_SANDBOX:
+	case specsgen.JobType_CREATE_SANDBOX:
 		resultMetadata, err = e.createSandbox(ctx, job)
-	case apiclient.JOBTYPE_START_SANDBOX:
+	case specsgen.JobType_START_SANDBOX:
 		resultMetadata, err = e.startSandbox(ctx, job)
-	case apiclient.JOBTYPE_STOP_SANDBOX:
+	case specsgen.JobType_STOP_SANDBOX:
 		resultMetadata, err = e.stopSandbox(ctx, job)
-	case apiclient.JOBTYPE_DESTROY_SANDBOX:
+	case specsgen.JobType_DESTROY_SANDBOX:
 		resultMetadata, err = e.destroySandbox(ctx, job)
-	case apiclient.JOBTYPE_RESIZE_SANDBOX:
+	case specsgen.JobType_RESIZE_SANDBOX:
 		resultMetadata, err = e.resizeSandbox(ctx, job)
-	case apiclient.JOBTYPE_CREATE_BACKUP:
+	case specsgen.JobType_CREATE_BACKUP:
 		resultMetadata, err = e.createBackup(ctx, job)
-	case apiclient.JOBTYPE_BUILD_SNAPSHOT:
+	case specsgen.JobType_BUILD_SNAPSHOT:
 		resultMetadata, err = e.buildSnapshot(ctx, job)
-	case apiclient.JOBTYPE_PULL_SNAPSHOT:
+	case specsgen.JobType_PULL_SNAPSHOT:
 		resultMetadata, err = e.pullSnapshot(ctx, job)
-	case apiclient.JOBTYPE_REMOVE_SNAPSHOT:
+	case specsgen.JobType_REMOVE_SNAPSHOT:
 		resultMetadata, err = e.removeSnapshot(ctx, job)
-	case apiclient.JOBTYPE_UPDATE_SANDBOX_NETWORK_SETTINGS:
+	case specsgen.JobType_UPDATE_SANDBOX_NETWORK_SETTINGS:
 		resultMetadata, err = e.updateNetworkSettings(ctx, job)
-	case apiclient.JOBTYPE_INSPECT_SNAPSHOT_IN_REGISTRY:
+	case specsgen.JobType_INSPECT_SNAPSHOT_IN_REGISTRY:
 		resultMetadata, err = e.inspectSnapshotInRegistry(ctx, job)
-	case apiclient.JOBTYPE_RECOVER_SANDBOX:
+	case specsgen.JobType_RECOVER_SANDBOX:
 		resultMetadata, err = e.recoverSandbox(ctx, job)
 	default:
 		err = fmt.Errorf("unknown job type: %s", job.GetType())
@@ -168,14 +173,14 @@ func (e *Executor) executeJob(ctx context.Context, job *apiclient.Job) (any, err
 }
 
 // updateJobStatus reports job completion status to the API
-func (e *Executor) updateJobStatus(ctx context.Context, jobID string, status apiclient.JobStatus, resultMetadata any, errorMessage *string) error {
+func (e *Executor) updateJobStatus(ctx context.Context, jobID string, status specsgen.JobStatus, resultMetadata any, errorMessage *string) error {
 	// Create a span for the API call - otelhttp will create a child span for the HTTP request
 	tracer := otel.Tracer("runner")
 	ctx, span := tracer.Start(ctx, "update_job_status",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
 			attribute.String("job.id", jobID),
-			attribute.String("job.status", string(status)),
+			attribute.String("job.status", status.String()),
 		),
 	)
 	defer span.End()
@@ -184,7 +189,7 @@ func (e *Executor) updateJobStatus(ctx context.Context, jobID string, status api
 		span.SetAttributes(attribute.String("job.error", *errorMessage))
 	}
 
-	updateStatus := apiclient.NewUpdateJobStatus(status)
+	updateStatus := apiclient.NewUpdateJobStatus(specs.JobStatusToAPIClient(status))
 	if errorMessage != nil {
 		updateStatus.SetErrorMessage(*errorMessage)
 	}
@@ -237,19 +242,17 @@ func (e *Executor) parsePayload(payload *string, target interface{}) error {
 
 // extractTraceContext extracts OpenTelemetry trace context from the job
 // and returns a new context with the trace information to continue distributed tracing
-func (e *Executor) extractTraceContext(ctx context.Context, job *apiclient.Job) context.Context {
+func (e *Executor) extractTraceContext(ctx context.Context, job *specsgen.Job) context.Context {
 	traceContext := job.GetTraceContext()
 	if len(traceContext) == 0 {
 		e.log.DebugContext(ctx, "no trace context in job", "job_id", job.GetId())
 		return ctx
 	}
 
-	// Convert map[string]interface{} to map[string]string for propagation
+	// map[string]string from proto — no type assertion needed
 	carrier := make(propagation.MapCarrier)
 	for k, v := range traceContext {
-		if strVal, ok := v.(string); ok {
-			carrier[k] = strVal
-		}
+		carrier[k] = v
 	}
 
 	// Use W3C Trace Context propagator to extract trace info

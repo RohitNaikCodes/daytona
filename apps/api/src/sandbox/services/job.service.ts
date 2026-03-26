@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository, LessThan, EntityManager } from 'typeorm'
 import { Job } from '../entities/job.entity'
 import { JobDto, JobStatus, JobType, ResourceType } from '../dto/job.dto'
-import { ResourceTypeForJobType } from '../dto/job-type-map.dto'
+import { JobTypeMap, ResourceTypeForJobType } from '../dto/job-type-map.dto'
 import { InjectRedis } from '@nestjs-modules/ioredis'
 import { Redis } from 'ioredis'
 import { Cron, CronExpression } from '@nestjs/schedule'
@@ -35,7 +35,7 @@ export class JobService {
    * If manager is null, uses the default repository (for non-transactional operations)
    * @template T The JobType enum value - ensures compile-time type safety for resourceType and payload
    */
-  async createJob<T extends JobType>(
+  async createJob<T extends keyof JobTypeMap>(
     manager: EntityManager | null,
     type: T,
     runnerId: string,

@@ -51,6 +51,8 @@ export interface JobTypeMap {
 }
 
 /**
- * Helper type to extract the allowed resource types for a given JobType as a union
+ * Helper type to extract the allowed resource types for a given JobType as a union.
+ * Constrained to keyof JobTypeMap (the set of "real" job types) so that proto-generated
+ * sentinel values (JOB_TYPE_UNSPECIFIED, UNRECOGNIZED) are excluded at compile time.
  */
-export type ResourceTypeForJobType<T extends JobType> = JobTypeMap[T]['resourceType'][number]
+export type ResourceTypeForJobType<T extends keyof JobTypeMap> = JobTypeMap[T]['resourceType'][number]

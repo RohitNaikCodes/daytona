@@ -1,11 +1,8 @@
 /*
  * Copyright 2025 Daytona Platforms Inc.
  * SPDX-License-Identifier: AGPL-3.0
+ *
+ * JobStatus is now generated from apps/runner/specs/runner.proto.
+ * This file re-exports it for backwards compatibility with existing imports.
  */
-
-export enum JobStatus {
-  PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
-}
+export { JobStatus } from '@daytonaio/runner-specs'
