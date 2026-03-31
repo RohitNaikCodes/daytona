@@ -24,11 +24,7 @@ import { useUpdateRegistryMutation } from '@/hooks/mutations/useUpdateRegistryMu
 import { useRegistriesQuery } from '@/hooks/queries/useRegistriesQuery'
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization'
 import { handleApiError } from '@/lib/error-handling'
-import {
-  DockerRegistryRegistryTypeEnum,
-  OrganizationRolePermissionsEnum,
-  type DockerRegistry,
-} from '@daytonaio/api-client'
+import { OrganizationRolePermissionsEnum, type DockerRegistry } from '@daytonaio/api-client'
 import { Info, Plus } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -68,7 +64,6 @@ const Registries: React.FC = () => {
           username: formData.username.trim(),
           password: formData.password.trim(),
           project: formData.project.trim(),
-          registryType: DockerRegistryRegistryTypeEnum.ORGANIZATION,
         },
         organizationId: selectedOrganization?.id,
       })
